@@ -1,0 +1,33 @@
+--- a/src/event/ngx_event_pipe.c	2009-08-28 16:12:35.000000000 +0800
++++ b/src/event/ngx_event_pipe.c	2011-04-18 15:22:39.302414042 +0800
+@@ -312,22 +312,19 @@
+ 
+             if (n >= size) {
+                 cl->buf->last = cl->buf->end;
+-
+-                /* STUB */ cl->buf->num = p->num++;
+-
+-                if (p->input_filter(p, cl->buf) == NGX_ERROR) {
+-                    return NGX_ABORT;
+-                }
+-
+                 n -= size;
+-                ln = cl;
+-                cl = cl->next;
+-                ngx_free_chain(p->pool, ln);
+-
+             } else {
+                 cl->buf->last += n;
+                 n = 0;
+             }
++            /* STUB */ cl->buf->num = p->num++;
++
++            if (p->input_filter(p, cl->buf) == NGX_ERROR) {
++                return NGX_ABORT;
++            }
++            ln = cl;
++            cl = cl->next;
++            ngx_free_chain(p->pool, ln);
+         }
+ 
+         if (cl) {
