@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  * 	Description:  implements resin's mod_caucho function for nginx
- * 		Version:  0.1
+ * 		Version:  0.5
  * 		 Author:  bin wang
  * 		Company:  netease
  * 		   Mail:  163.beijing@gmail.com
@@ -155,8 +155,6 @@ typedef struct {
 
 	ngx_array_t                   *hmux_lengths;
 	ngx_array_t                   *hmux_values;
-	ngx_flag_t                     hmux_set_header_x_forwarded_for;
-	ngx_flag_t                     hmux_set_header_host;
 #if (NGX_HTTP_CACHE)
 	ngx_http_complex_value_t       cache_key;
 #endif
@@ -196,6 +194,7 @@ typedef struct {
 	int 						head_send_flag:1;
 	int 						long_post_flag:1;
 	int 						flush_flag:1;
+	int 						restore_flag:1;
 	int 						mend_flag:8;
 } ngx_hmux_ctx_t;
 
@@ -237,10 +236,6 @@ static char *ngx_hmux_upstream_max_fails_unsupported(ngx_conf_t *cf,
 		ngx_command_t *cmd, void *conf);
 static char *ngx_hmux_upstream_fail_timeout_unsupported(ngx_conf_t *cf,
 		ngx_command_t *cmd, void *conf);
-static ngx_int_t ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
-		ngx_str_t *v, uintptr_t data);
-static ngx_int_t ngx_hmux_get_host_value(ngx_http_request_t *r, 
-		ngx_str_t *v,uintptr_t data);
 
 static void *ngx_hmux_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_hmux_merge_loc_conf(ngx_conf_t *cf,void *parent, void *child);
@@ -549,20 +544,6 @@ static ngx_command_t  ngx_hmux_commands[] = {
 		NGX_HTTP_LOC_CONF_OFFSET,
 		offsetof(ngx_hmux_loc_conf_t, upstream.ignore_headers),
 		&ngx_hmux_ignore_headers_masks },
-
-	{ ngx_string("hmux_x_forwarded_for"),
-		NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-		ngx_conf_set_flag_slot,
-		NGX_HTTP_LOC_CONF_OFFSET,
-		offsetof(ngx_hmux_loc_conf_t, hmux_set_header_x_forwarded_for),
-		NULL },
-
-	{ ngx_string("hmux_host"),
-		NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-		ngx_conf_set_flag_slot,
-		NGX_HTTP_LOC_CONF_OFFSET,
-		offsetof(ngx_hmux_loc_conf_t, hmux_set_header_host),
-		NULL },
 
 	ngx_null_command
 };
@@ -1137,6 +1118,30 @@ ngx_http_upstream_dummy_handler(ngx_http_request_t *r,
 	return;
 }
 
+static ngx_int_t
+ngx_hmux_restore_request_body(ngx_http_request_t *r)
+{
+    ngx_buf_t    *buf, *next;
+	ngx_chain_t  *cl;
+
+    if (r->request_body == NULL
+        || r->request_body->bufs == NULL
+        || r->request_body->temp_file)
+    {
+        return NGX_OK;
+    }
+
+    cl = r->request_body->bufs;
+    buf = cl->buf;
+	buf->pos = buf->start;
+
+    if (cl->next != NULL) {
+		next = cl->next->buf;
+		next->pos = next->start;
+    }
+    return NGX_OK;
+}
+
 /* processing response data here */
 static ngx_int_t
 ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
@@ -1155,10 +1160,19 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 	ngx_str_t 			str;
 	int 				needMoreData;
 
+	r = p->input_ctx;
+	ctx = ngx_http_get_module_ctx(r, ngx_hmux_module);
+	if(!ctx->restore_flag)
+	{
+		ctx->restore_flag=1;
+		ngx_hmux_restore_request_body(r);
+	}
+
 	if (buf->pos == buf->last) {
 		return NGX_OK;
 	}
 
+	u = r->upstream;
 	need_read_resp_data = 0;
 	omit_flag = 0;
 	b = NULL;
@@ -1166,9 +1180,6 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 	needMoreData=0;
 	prev = &buf->shadow;
 	flush_buf = NULL;
-	r = p->input_ctx;
-	u = r->upstream;
-	ctx = ngx_http_get_module_ctx(r, ngx_hmux_module);
 	hmux_msg_t* msg = hmux_msg_reuse(&ctx->msg);
 
 	if(ctx->undisposed!=NULL)
@@ -1822,53 +1833,6 @@ write_headers(hmux_msg_t *msg, ngx_http_request_t *r)
 static ngx_int_t 
 write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 {
-	ngx_str_t				  key;
-	ngx_str_t				  value;
-	ngx_int_t 				  rc;
-
-	if( (NGX_CONF_UNSET != hlcf->hmux_set_header_x_forwarded_for )
-			&& (hlcf->hmux_set_header_x_forwarded_for))
-	{
-		rc = ngx_hmux_get_x_forwarded_for_value(r,&value,0);
-		if(NGX_OK != rc){ 
-			return rc;
-		}
-		key.len  = sizeof("X-Forwarded-For")-1;
-		key.data = (u_char *)"X-Forwarded-For";
-		rc = hmux_write_string(msg, HMUX_HEADER, &key);
-		if(rc != NGX_OK)
-		{
-			return rc;
-		}
-		rc = hmux_write_string(msg, HMUX_STRING, &value);
-		if(rc != NGX_OK)
-		{
-			return rc;
-		}
-
-	}
-
-	if( (NGX_CONF_UNSET != hlcf->hmux_set_header_host)
-			&& (hlcf->hmux_set_header_host))
-	{
-		rc = ngx_hmux_get_host_value(r,&value,0);
-		if(NGX_OK != rc){ 
-			return rc;
-		}
-		key.len  = sizeof("Host")-1;
-		key.data = (u_char *)"Host";
-		rc = hmux_write_string(msg, HMUX_HEADER, &key);
-		if(rc != NGX_OK)
-		{
-			return rc;
-		}
-		rc = hmux_write_string(msg, HMUX_STRING, &value);
-		if(rc != NGX_OK)
-		{
-			return rc;
-		}
-
-	}
 	return NGX_OK;
 }
 
@@ -2522,8 +2486,6 @@ ngx_hmux_create_loc_conf(ngx_conf_t *cf)
 
 	conf->hmux_header_packet_buffer_size_conf = NGX_CONF_UNSET_SIZE;
 	conf->max_hmux_data_packet_size_conf = NGX_CONF_UNSET_SIZE;
-	conf->hmux_set_header_x_forwarded_for= NGX_CONF_UNSET;
-	conf->hmux_set_header_host= NGX_CONF_UNSET;
 
 	conf->upstream.store = NGX_CONF_UNSET;
 	conf->upstream.store_access = NGX_CONF_UNSET_UINT;
@@ -2589,12 +2551,6 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 	ngx_conf_merge_size_value(conf->max_hmux_data_packet_size_conf,
 			prev->max_hmux_data_packet_size_conf,
 			(size_t) HMUX_MSG_BUFFER_SZ);
-
-	ngx_conf_merge_value(conf->hmux_set_header_x_forwarded_for,
-			prev->hmux_set_header_x_forwarded_for, 0);
-
-	ngx_conf_merge_value(conf->hmux_set_header_host,
-			prev->hmux_set_header_host, 0);
 
 	ngx_conf_merge_uint_value(conf->upstream.store_access,
 			prev->upstream.store_access, 0600);
@@ -2821,59 +2777,6 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 	}
 
 	return NGX_CONF_OK;
-}
-
-
-static ngx_int_t
-ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
-		ngx_str_t *v, uintptr_t data)
-{   
-	u_char  *p;
-
-	if (r->headers_in.x_forwarded_for == NULL) {
-		v->len = r->connection->addr_text.len;
-		v->data = r->connection->addr_text.data;
-		return NGX_OK;
-	}
-
-	v->len = r->headers_in.x_forwarded_for->value.len
-		+ sizeof(", ") - 1 + r->connection->addr_text.len;
-
-	p = ngx_pnalloc(r->pool, v->len);
-	if (p == NULL) {
-		return NGX_ERROR;
-	}
-
-	v->data = p;
-
-	p = ngx_copy(p, r->headers_in.x_forwarded_for->value.data,
-			r->headers_in.x_forwarded_for->value.len);
-
-	*p++ = ','; *p++ = ' ';
-
-	ngx_memcpy(p, r->connection->addr_text.data, r->connection->addr_text.len);
-
-	return NGX_OK;
-}
-
-static ngx_int_t
-ngx_hmux_get_host_value(ngx_http_request_t *r, ngx_str_t *v,
-		uintptr_t data)
-{
-	ngx_http_core_srv_conf_t  *cscf;
-
-	if (r->headers_in.server.len) {
-		v->len = r->headers_in.server.len;
-		v->data = r->headers_in.server.data;
-
-	} else {
-		cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
-
-		v->len = cscf->server_name.len;
-		v->data = cscf->server_name.data;
-	}    
-
-	return NGX_OK;
 }
 
 static int
