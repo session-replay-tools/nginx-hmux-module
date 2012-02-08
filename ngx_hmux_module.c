@@ -178,18 +178,20 @@ typedef enum {
 typedef struct {
 	ngx_hmux_state_e            state;
 	hmux_msg_t                  msg;
-	//this is for fixing the problem 
-	//when  request content length is not equal to content-length
+	/* 
+	 * this is for fixing the problem  
+	 * when  request content length is not equal to content-length
+	 */
 	off_t 						req_body_send_len;
 	off_t 						req_body_len;
-	//request body which has not been sent to the backend 
+	/* request body which has not been sent to the backend */
 	ngx_chain_t                 *req_body;
-	//buffer for Long POST disposure
+	/* buffer for Long POST disposure */
 	ngx_chain_t                 *resp_body;
-	//for input filter disposure
+	/* for input filter disposure */
 	void 						*undisposed;
 	size_t						undisposed_size;
-	//the response body chunk packet's length
+	/* the response body chunk packet's length */
 	size_t                      resp_chunk_len;
 	int 						req_body_sent_over:1;
 	int 						head_send_flag:1;
@@ -763,7 +765,7 @@ ngx_hmux_create_request(ngx_http_request_t *r)
 
 	msg = hmux_msg_reuse(&ctx->msg);
 
-	//creates buffer for header
+	/* creates buffer for header */
 	if (NGX_OK != hmux_msg_create_buffer(r->pool,
 				hlcf->hmux_header_packet_buffer_size_conf, msg)) {
 		return NGX_ERROR;
@@ -798,7 +800,7 @@ ngx_hmux_create_request(ngx_http_request_t *r)
 			last = last->next;
 		}
 		if (ctx->req_body!=NULL&&!ctx->req_body_sent_over) {
-			//it has body data left for sending
+			/* it has body data left for sending */
 			ctx->state = ngx_hmux_st_request_body_data_sending;
 			last->next = hmux_cmd_msg(ctx,r,HMUX_YIELD);
 		}
@@ -1195,7 +1197,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 	if(ctx->undisposed!=NULL)
 	{
 		ctx->mend_flag=ctx->mend_flag+1;
-		//mend preread data to buf
+		/* mend preread data to buf */
 		len = ctx->undisposed_size+(buf->last-buf->pos);
 		mended_buf = ngx_create_temp_buf(r->pool,len);
 		if (NULL == mended_buf) {
@@ -1363,7 +1365,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 			if(ctx->long_post_flag)
 			{
 				ctx->long_post_flag = 0;
-				//add buffered response data 
+				/* add buffered response data */
 				tmp_cl = ctx->resp_body;
 				tmp_cl->buf->tag = p->tag;
 				while(tmp_cl->next != NULL){
@@ -1571,7 +1573,7 @@ hmux_cmd_msg(ngx_hmux_ctx_t *ctx,ngx_http_request_t *r,u_char code)
 	ngx_chain_t 	*cl;
 
 	msg = hmux_msg_reuse(&ctx->msg);
-	//create buffer for yield command
+	/* create buffer for yield command */
 	if (NGX_OK != hmux_msg_create_buffer(r->pool,HMUX_CMD_SZ, msg)) {
 		return NULL;
 	}
@@ -1901,7 +1903,7 @@ static ngx_int_t hmux_marshal_into_msg(hmux_msg_t *msg,
 		return rc;
 	}
 
-	//pass headers
+	/* pass headers */
 	if (hlcf->upstream.pass_request_headers) {
 
 		rc = write_headers(msg, r, hlcf);
@@ -2258,7 +2260,7 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 	if(ctx->head_send_flag&&HMUX_QUIT==code)
 	{
 		r->header_only=1;
-		//for sending to client quickly
+		/* for sending to client quickly */
 		r->headers_out.content_length_n=0;
 	}
 	if (code!=HMUX_DATA && code != HMUX_QUIT && code != HMUX_EXIT) {
