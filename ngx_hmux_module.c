@@ -1430,6 +1430,9 @@ ngx_hmux_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 	if(u != NULL)
 	{
 		u->length = 0;
+#if defined(nginx_version) && nginx_version >= 1001014  
+		u->keepalive=1;
+#endif
 	}
 	ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 			"finalize http hmux request");
