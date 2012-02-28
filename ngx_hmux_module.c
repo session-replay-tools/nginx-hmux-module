@@ -5,25 +5,25 @@
  * 		Company:  netease
  * 		   Mail:  163.beijing@gmail.com
  *    Attension:  
- *    				1) it is tested in linux only 
- *    				2) we have already tested eight projects for this module:
- *    						resin-doc
- *    						jackrabbit
- *    						hudson
- *    						jetspeed
+ * 				    1) it is tested in linux only 
+ *                  2) we have already tested eight projects for this module:
+ *                          resin-doc
+ *                          jackrabbit
+ *                          hudson
+ *                          jetspeed
  *    						geoserver
  *    						VQWiki
  *    						struts2-showcase
  *    						spring-security-samples
- *    				   all are easily deployed in resin (web war)
- *    				3) this module references yaoweibin's nginx ajp module
- *    				4) if you use keepalive module,you should set accept_mutex 
- *    				   off in multiprocess environment
- *    				5) if you have any problems or bugs, please contact me
+ *                     all are easily deployed in resin (web war)
+ *                  3) this module references yaoweibin's nginx ajp module
+ *                  4) if you use keepalive module,you should set accept_mutex 
+ *                     off in multiprocess environment
+ *                  5) if you have any problems or bugs, please contact me
  *
  *  The following describes the hmux protocol implemented in this module
  *
- * 							hmux protocol
+ *                 hmux protocol
  *  A GET request:
  *      Frontend                Backend
  *      CSE_METHOD
@@ -35,7 +35,7 @@
  *                              CSE_END
  *
  *  Short POST:
- *      Frontend       			Backend
+ *      Frontend                Backend
  *      CSE_METHOD
  *      ...
  *      CSE_HEADER/CSE_VALUE
@@ -46,7 +46,7 @@
  *                              CSE_END
  *
  *  Long POST:
- *      Frontend       			Backend
+ *      Frontend                Backend
  *      CSE_METHOD
  *      ...
  *      CSE_HEADER/CSE_VALUE
