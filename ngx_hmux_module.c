@@ -194,12 +194,14 @@ typedef struct {
 	size_t						undisposed_size;
 	/* the response body chunk packet's length */
 	size_t                      resp_chunk_len;
-	int 						req_body_sent_over:1;
-	int 						head_send_flag:1;
-	int 						long_post_flag:1;
-	int 						flush_flag:1;
-	int 						restore_flag:1;
-	int 						mend_flag:8;
+	unsigned int 				req_body_sent_over:1;
+	unsigned int 				head_send_flag:1;
+	unsigned int 				long_post_flag:1;
+	unsigned int 				flush_flag:1;
+	unsigned int 				restore_flag:1;
+	unsigned int 				keepalive_flag:1;
+	unsigned int 				code:8;
+	unsigned int 				mend_flag:8;
 } ngx_hmux_ctx_t;
 
 
@@ -1075,6 +1077,8 @@ hmux_data_msg_send_body(ngx_http_request_t *r,size_t max_size,
 			{
 				ctx->req_body_sent_over = 1;
 				b_out->last_buf = 1;
+				ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0,
+						"req_body_send_len finally equals req_body_len");
 			}
 		}else
 		{
@@ -1100,6 +1104,22 @@ hmux_data_msg_send_body(ngx_http_request_t *r,size_t max_size,
 
 	*body = in;
 	cl->next = NULL;
+	if(ctx->req_body_send_len==ctx->req_body_len)
+	{
+		if(!ctx->req_body_sent_over)
+		{
+			if(in != NULL)
+			{
+				ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+						"not set req_body_sent_over before");
+			}
+			ctx->req_body_sent_over = 1;
+		}
+		if(b_out!=NULL&&!b_out->last_buf)
+		{
+			b_out->last_buf = 1;
+		}
+	}
 
 	hmux_data_msg_begin(msg, actual_size); 
 
@@ -1269,6 +1289,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 				case HMUX_EXIT:
 					p->upstream_done = 1;
 					ctx->state = ngx_hmux_st_response_end;
+					ctx->code = code;
 					if(ctx->mend_flag)
 					{
 						ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
@@ -1428,12 +1449,21 @@ ngx_hmux_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 {
 
 	ngx_http_upstream_t *u = r->upstream;
+	ngx_hmux_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_hmux_module);
 	if(u != NULL)
 	{
-		u->length = 0;
+		if(HMUX_QUIT==ctx->code)
+		{
+			u->length = 0;
 #if defined(nginx_version) && nginx_version >= 1001004 
-		u->keepalive=1;
+			u->keepalive=1;
 #endif
+		}else
+		{
+#if defined(nginx_version) && nginx_version >= 1001004 
+			u->keepalive=0;
+#endif
+		}
 	}
 	ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 			"finalize http hmux request");
@@ -2217,6 +2247,7 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 
 			case HMUX_QUIT:
 			case HMUX_EXIT:
+				ctx->code = code;
 				ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 						"accept EXIT or QUIT command in unmarshal");
 				over = 1;
