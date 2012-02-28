@@ -25,14 +25,14 @@
  *
  * 							hmux protocol
  *  A GET request:
- * 		Frontend       			Backend
+ * 		Frontend                Backend
  * 		CSE_METHOD
  * 		...
  * 		CSE_HEADER/CSE_VALUE
  * 		CSE_END
- * 								CSE_DATA
- * 								CSE_DATA
- * 								CSE_END
+ *                              CSE_DATA
+ *                              CSE_DATA
+ *                              CSE_END
  *
  *  Short POST:
  * 		Frontend       			Backend
@@ -41,24 +41,25 @@
  * 		CSE_HEADER/CSE_VALUE
  * 		CSE_DATA
  * 		CSE_END
- * 								CSE_DATA
- * 								CSE_DATA
- * 								CSE_END
+ *                              CSE_DATA
+ *                              CSE_DATA
+ *                              CSE_END
+ *
  *  Long POST:
  * 		Frontend       			Backend
  * 		CSE_METHOD
  * 		...
  * 		CSE_HEADER/CSE_VALUE
  * 		CSE_DATA
- * 								CSE_DATA (optional)   #here we buffer resp data
+ *                              CSE_DATA (optional)   #here we buffer resp data
  * 		CSE_DATA
- * 								CSE_ACK
- * 								CSE_DATA (optional)   #here we buffer resp data
+ *                              CSE_ACK
+ *                              CSE_DATA (optional)   #here we buffer resp data
  * 		CSE_DATA
- * 								CSE_ACK
+ *                              CSE_ACK
  * 		CSE_END
- * 								CSE_DATA
- * 								CSE_END
+ *                              CSE_DATA
+ *                              CSE_END
  *
  *
  *---------------------------------------------------------------------------*/
@@ -184,8 +185,8 @@ typedef struct {
 	 * this is for fixing the problem  
 	 * when  request content length is not equal to content-length
 	 */
-	off_t 						req_body_send_len;
-	off_t 						req_body_len;
+	off_t                       req_body_send_len;
+	off_t                       req_body_len;
 	/* request body which has not been sent to the backend */
 	ngx_chain_t                 *req_body;
 	/* buffer for Long POST disposure */
