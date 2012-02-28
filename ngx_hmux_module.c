@@ -17,7 +17,8 @@
  *    						spring-security-samples
  *    				   all are easily deployed in resin (web war)
  *    				3) this module references yaoweibin's nginx ajp module
- *    				4) if you use keepalive module,you should set accept_mutex off in multiprocess environment
+ *    				4) if you use keepalive module,you should set accept_mutex 
+ *    				   off in multiprocess environment
  *    				5) if you have any problems or bugs, please contact me
  *
  *  The following describes the hmux protocol implemented in this module
@@ -49,10 +50,10 @@
  * 		...
  * 		CSE_HEADER/CSE_VALUE
  * 		CSE_DATA
- * 								CSE_DATA (optional)   #here we buffer response data
+ * 								CSE_DATA (optional)   #here we buffer resp data
  * 		CSE_DATA
  * 								CSE_ACK
- * 								CSE_DATA (optional)   #here we buffer response data
+ * 								CSE_DATA (optional)   #here we buffer resp data
  * 		CSE_DATA
  * 								CSE_ACK
  * 		CSE_END
@@ -60,7 +61,7 @@
  * 								CSE_END
  *
  *
- *-----------------------------------------------------------------------------*/
+ *---------------------------------------------------------------------------*/
 
 #include <nginx.h>
 #include <ngx_config.h>
@@ -190,17 +191,17 @@ typedef struct {
 	/* buffer for Long POST disposure */
 	ngx_chain_t                 *resp_body;
 	/* for input filter disposure */
-	void 						*undisposed;
-	size_t						undisposed_size;
+	void                        *undisposed;
+	size_t                      undisposed_size;
 	/* the response body chunk packet's length */
 	size_t                      resp_chunk_len;
-	unsigned int 				req_body_sent_over:1;
-	unsigned int 				head_send_flag:1;
-	unsigned int 				long_post_flag:1;
-	unsigned int 				flush_flag:1;
-	unsigned int 				restore_flag:1;
-	unsigned int 				code:8;
-	unsigned int 				mend_flag:8;
+	unsigned int                req_body_sent_over:1;
+	unsigned int                head_send_flag:1;
+	unsigned int                long_post_flag:1;
+	unsigned int                flush_flag:1;
+	unsigned int                restore_flag:1;
+	unsigned int                code:8;
+	unsigned int                mend_flag:8;
 } ngx_hmux_ctx_t;
 
 
@@ -218,8 +219,8 @@ static void ngx_hmux_finalize_request(ngx_http_request_t *r,ngx_int_t rc);
 
 static ngx_int_t ngx_http_upstream_send_request_body(ngx_http_request_t *r, 
 		ngx_http_upstream_t *u);
-static ngx_chain_t *hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size,
-		ngx_chain_t **body);
+static ngx_chain_t *hmux_data_msg_send_body(ngx_http_request_t *r, 
+		size_t max_size,ngx_chain_t **body);
 static void ngx_http_upstream_send_request_body_handler(ngx_http_request_t *r,
 		ngx_http_upstream_t *u);
 static void ngx_http_upstream_dummy_handler(ngx_http_request_t *r,
@@ -246,7 +247,8 @@ static ngx_int_t ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
 
 static void *ngx_hmux_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_hmux_merge_loc_conf(ngx_conf_t *cf,void *parent, void *child);
-static int hmux_log_overflow(ngx_uint_t level,hmux_msg_t *msg, const char *context);
+static int hmux_log_overflow(ngx_uint_t level,hmux_msg_t *msg, 
+		const char *context);
 
 /**
  * protocol functions
@@ -260,8 +262,10 @@ static ngx_int_t hmux_read_string(hmux_msg_t* msg,ngx_str_t* rvalue);
 
 static hmux_msg_t *hmux_msg_reuse(hmux_msg_t *msg);
 static ngx_int_t hmux_data_msg_begin(hmux_msg_t *msg, size_t size); 
-static ngx_chain_t* hmux_cmd_msg(ngx_hmux_ctx_t *ctx,ngx_http_request_t *r,u_char code);
-static ngx_int_t hmux_msg_create_buffer(ngx_pool_t *pool, size_t size, hmux_msg_t *msg);
+static ngx_chain_t* hmux_cmd_msg(ngx_hmux_ctx_t *ctx,ngx_http_request_t *r,
+		u_char code);
+static ngx_int_t hmux_msg_create_buffer(ngx_pool_t *pool, size_t size, 
+		hmux_msg_t *msg);
 
 static ngx_int_t hmux_marshal_into_msg(hmux_msg_t *msg,
 		ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf);
@@ -775,7 +779,8 @@ ngx_hmux_create_request(ngx_http_request_t *r)
 	rc = hmux_marshal_into_msg(msg, r, hlcf);
 	if (NGX_OK != rc) {
 		ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-				"hmux_header_packet_buffer_size is too small:%u", hlcf->hmux_header_packet_buffer_size_conf);
+				"hmux_header_packet_buffer_size is too small:%u", 
+				hlcf->hmux_header_packet_buffer_size_conf);
 
 
 		return rc;
@@ -795,7 +800,8 @@ ngx_hmux_create_request(ngx_http_request_t *r)
 		ctx->req_body = r->upstream->request_bufs;
 		r->upstream->request_bufs = cl;
 
-		cl->next = hmux_data_msg_send_body(r,hlcf->max_hmux_data_packet_size_conf, &ctx->req_body);
+		cl->next = hmux_data_msg_send_body(r,
+				hlcf->max_hmux_data_packet_size_conf, &ctx->req_body);
 		last = cl;
 		while(last->next!=NULL)
 		{
@@ -867,7 +873,8 @@ ngx_hmux_process_header(ngx_http_request_t *r)
 
 
 static ngx_int_t
-ngx_http_upstream_send_request_body(ngx_http_request_t *r, ngx_http_upstream_t *u)
+ngx_http_upstream_send_request_body(ngx_http_request_t *r, 
+		ngx_http_upstream_t *u)
 {
 	ngx_int_t                    rc;
 	ngx_chain_t                  *cl;
@@ -888,10 +895,12 @@ ngx_http_upstream_send_request_body(ngx_http_request_t *r, ngx_http_upstream_t *
 
 	if (ctx->state > ngx_hmux_st_request_body_data_sending) {
 		ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-				"ngx_http_upstream_send_request_body: bad state(%d)", ctx->state);
+				"ngx_http_upstream_send_request_body: bad state(%d)", 
+				ctx->state);
 	}
 
-	cl = hmux_data_msg_send_body(r, hlcf->max_hmux_data_packet_size_conf, &ctx->req_body);
+	cl = hmux_data_msg_send_body(r, hlcf->max_hmux_data_packet_size_conf,
+			&ctx->req_body);
 
 	if (NULL == u->output.in && NULL == u->output.busy) {
 		if (NULL == cl) {
@@ -993,7 +1002,7 @@ hmux_data_msg_send_body(ngx_http_request_t *r,size_t max_size,
 
 	msg = hmux_msg_reuse(&ctx->msg);
 
-	if ((rc = hmux_msg_create_buffer(r->pool,HMUX_DATA_SEG_SZ, msg)) != NGX_OK) {
+	if ((rc = hmux_msg_create_buffer(r->pool,HMUX_DATA_SEG_SZ, msg)) != NGX_OK){
 		return NULL;
 	}
 	out = cl = ngx_alloc_chain_link(r->pool);
@@ -1021,13 +1030,14 @@ hmux_data_msg_send_body(ngx_http_request_t *r,size_t max_size,
 		ngx_memcpy(b_out, b_in, sizeof(ngx_buf_t));
 		base_size = size;
 		if (b_in->in_file) {
-			if ((size_t)(b_in->file_last - b_in->file_pos) <= (max_size - size)){
+			if ((size_t)(b_in->file_last - b_in->file_pos) <= (max_size-size)){
 				b_out->file_pos = b_in->file_pos;
 				b_out->file_last = b_in->file_pos = b_in->file_last;
 
 				size += b_out->file_last - b_out->file_pos;
 			}
-			else if ((size_t)(b_in->file_last - b_in->file_pos) > (max_size - size)) {
+			else if ((size_t)(b_in->file_last - b_in->file_pos) >
+					(max_size-size)){
 				b_out->file_pos = b_in->file_pos;
 				b_in->file_pos += max_size - size;
 				b_out->file_last = b_in->file_pos;
@@ -1064,7 +1074,8 @@ hmux_data_msg_send_body(ngx_http_request_t *r,size_t max_size,
 				if(b_out->pos+redundant_size<b_out->last)
 				{
 					b_out->last = b_out->last-redundant_size;
-					ctx->req_body_send_len = ctx->req_body_send_len-redundant_size;
+					ctx->req_body_send_len = ctx->req_body_send_len-
+						redundant_size;
 					actual_size = actual_size-redundant_size;
 				}else
 				{
@@ -1273,7 +1284,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 					if(rc != NGX_OK)
 					{
 						ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-								"overflow when receiving flush command in filter");
+								"overflow when receiving flush comm in filter");
 						needMoreData = 1;
 						ctx->mend_flag=ctx->mend_flag+1;
 						break;
@@ -1292,7 +1303,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 					if(ctx->mend_flag)
 					{
 						ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-								"successfully for overflow when receiving data in filter,mend_flag:%d",
+								"ok for overflow recving data in filter:%d",
 								ctx->mend_flag);
 					}
 					return NGX_OK;
@@ -1632,7 +1643,8 @@ hmux_cmd_msg(ngx_hmux_ctx_t *ctx,ngx_http_request_t *r,u_char code)
 }
 
 
-static ngx_int_t hmux_msg_create_buffer(ngx_pool_t *pool, size_t size, hmux_msg_t *msg)
+static ngx_int_t hmux_msg_create_buffer(ngx_pool_t *pool, size_t size, 
+		hmux_msg_t *msg)
 {
 	msg->buf = ngx_create_temp_buf(pool, size);
 	if (NULL == msg->buf) {
@@ -1696,7 +1708,8 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
 		uri = &r->unparsed_uri;
 	}
 	j = 0; 
-	for (i = 0; (ch = uri->data[i]) && ch != '?' && (j + 3) < sizeof(buf)&&i<uri->len; i++) {
+	for (i = 0; (ch = uri->data[i]) && ch != '?' && (j + 3) < sizeof(buf)
+			&&i<uri->len; i++) {
 		if ('%' == ch ) {
 			buf[j++] = '%'; 
 			buf[j++] = '2'; 
@@ -1806,10 +1819,12 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
 			return rc;
 		}
 	}
-	if (r->headers_in.authorization!=NULL&&r->headers_in.authorization->value.len!=0)
+	if (r->headers_in.authorization!=NULL&&
+			r->headers_in.authorization->value.len!=0)
 	{
 		/* write auth type */
-		rc = hmux_write_string(msg, CSE_AUTH_TYPE, &r->headers_in.authorization->value);	
+		rc = hmux_write_string(msg, CSE_AUTH_TYPE, 
+				&r->headers_in.authorization->value);	
 		if(rc != NGX_OK)
 		{
 			return rc;
@@ -1855,7 +1870,8 @@ write_headers(hmux_msg_t *msg, ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 				return rc;
 			}
 		}
-		else if (! strncasecmp((char*)header[i].key.data, "Expect",sizeof("Expect"))) {
+		else if (! strncasecmp((char*)header[i].key.data, 
+					"Expect",sizeof("Expect"))) {
 			/* expect=continue-100 shouldn't be passed to backend */
 		}else {
 			if(!strncasecmp((char*)header[i].key.data, "X-Forwarded-For",
@@ -1886,7 +1902,8 @@ write_headers(hmux_msg_t *msg, ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 }
 
 static ngx_int_t 
-write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
+write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r, 
+		ngx_hmux_loc_conf_t *hlcf)
 {
 	ngx_str_t				  key;
 	ngx_str_t				  value;
@@ -2101,14 +2118,16 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 				if (NULL == h->lowcase_key) {
 					return NGX_ERROR;
 				}
-				h->hash = ngx_hash_strlow(h->lowcase_key, h->key.data, h->key.len); 
+				h->hash = ngx_hash_strlow(h->lowcase_key, h->key.data, 
+						h->key.len); 
 
 				hh = ngx_hash_find(&umcf->headers_in_hash, h->hash,
 						h->lowcase_key, h->key.len);
-				ngx_log_error(NGX_LOG_DEBUG,r->connection->log,0,"head key and value:\"%V: %V\"",&h->key, &h->value);
+				ngx_log_error(NGX_LOG_DEBUG,r->connection->log,0,
+						"head key and value:\"%V: %V\"",&h->key, &h->value);
 				if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {
 					ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-							"hmux_unmarshal_response: hh->handler error: \"%V: %V\"", 
+							" hh->handler error: \"%V: %V\"", 
 							&h->key, &h->value);
 
 					return NGX_ERROR;
@@ -2148,13 +2167,13 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 				if(ctx->resp_body!=NULL&&!ctx->req_body_sent_over)
 				{
 					ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-							"receive resin response data before having sent the post data");
+							"recv resp data before having sent the post data");
 					ctx->long_post_flag = 1;
 					rc = hmux_read_string(msg,&str);
 					if(rc != NGX_OK)
 					{
 						ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-								"overflow when receiving data command in unmarshal");
+								"overflow when recving data comm in unmarshal");
 						buf->pos = pos;
 						return NGX_AGAIN;
 					}
@@ -2269,7 +2288,8 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 					return NGX_AGAIN;
 				}
 				ngx_log_debug2(NGX_LOG_DEBUG_EVENT, r->connection->log, 0,
-						"accept hmux default command:%s %z in unmarshal", str.data, str.len);
+						"accept hmux default command:%s %z in unmarshal", 
+						str.data, str.len);
 				break;
 		}
 
