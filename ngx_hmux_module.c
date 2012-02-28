@@ -2380,7 +2380,7 @@ ngx_hmux_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 	add = port = 0;
 	if (ngx_strncasecmp(url->data, (u_char *) "hmux://", 7) == 0) {
-		add = 6;
+		add = 7;
 		port = 6800;
 	}
 
