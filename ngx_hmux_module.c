@@ -199,7 +199,6 @@ typedef struct {
 	unsigned int 				long_post_flag:1;
 	unsigned int 				flush_flag:1;
 	unsigned int 				restore_flag:1;
-	unsigned int 				keepalive_flag:1;
 	unsigned int 				code:8;
 	unsigned int 				mend_flag:8;
 } ngx_hmux_ctx_t;
