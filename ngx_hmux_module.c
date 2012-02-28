@@ -11,10 +11,10 @@
  *                          jackrabbit
  *                          hudson
  *                          jetspeed
- *    						geoserver
- *    						VQWiki
- *    						struts2-showcase
- *    						spring-security-samples
+ *                          geoserver
+ *                          VQWiki
+ *                          struts2-showcase
+ *                          spring-security-samples
  *                     all are easily deployed in resin (web war)
  *                  3) this module references yaoweibin's nginx ajp module
  *                  4) if you use keepalive module,you should set accept_mutex 
