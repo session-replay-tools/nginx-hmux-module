@@ -55,9 +55,9 @@
  *      CSE_DATA
  *                              CSE_ACK
  *                              CSE_DATA (optional)   #here we buffer resp data
- * 		CSE_DATA
+ *      CSE_DATA
  *                              CSE_ACK
- * 		CSE_END
+ *      CSE_END
  *                              CSE_DATA
  *                              CSE_END
  *
