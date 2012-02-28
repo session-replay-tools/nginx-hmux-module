@@ -25,34 +25,34 @@
  *
  * 							hmux protocol
  *  A GET request:
- * 		Frontend                Backend
- * 		CSE_METHOD
- * 		...
- * 		CSE_HEADER/CSE_VALUE
- * 		CSE_END
+ *      Frontend                Backend
+ *      CSE_METHOD
+ *      ...
+ *      CSE_HEADER/CSE_VALUE
+ *      CSE_END
  *                              CSE_DATA
  *                              CSE_DATA
  *                              CSE_END
  *
  *  Short POST:
- * 		Frontend       			Backend
- * 		CSE_METHOD
- * 		...
- * 		CSE_HEADER/CSE_VALUE
- * 		CSE_DATA
- * 		CSE_END
+ *      Frontend       			Backend
+ *      CSE_METHOD
+ *      ...
+ *      CSE_HEADER/CSE_VALUE
+ *      CSE_DATA
+ *      CSE_END
  *                              CSE_DATA
  *                              CSE_DATA
  *                              CSE_END
  *
  *  Long POST:
- * 		Frontend       			Backend
- * 		CSE_METHOD
- * 		...
- * 		CSE_HEADER/CSE_VALUE
- * 		CSE_DATA
+ *      Frontend       			Backend
+ *      CSE_METHOD
+ *      ...
+ *      CSE_HEADER/CSE_VALUE
+ *      CSE_DATA
  *                              CSE_DATA (optional)   #here we buffer resp data
- * 		CSE_DATA
+ *      CSE_DATA
  *                              CSE_ACK
  *                              CSE_DATA (optional)   #here we buffer resp data
  * 		CSE_DATA
