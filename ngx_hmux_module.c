@@ -1473,6 +1473,7 @@ ngx_hmux_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 		{
 #if defined(nginx_version) && nginx_version >= 1001004 
 			u->keepalive=0;
+			u->length = 0;
 #endif
 		}
 	}
