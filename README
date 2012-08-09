@@ -352,15 +352,11 @@ Directives
     It may be used to prevent a worker process blocking for too long while spooling data.
 
   keepalive
-    syntax: *keepalive <num> [single]*
+    syntax: *keepalive <num> 
 
     default: *none*
 
     context: *upstream*
-
-    Switches on keepalive module for the upstream in question. This
-    directive comes from ngx_http_upstream_keepalive_module
-    (<http://mdounin.ru/hg/ngx_http_upstream_keepalive/>).
 
     Parameters:
 
@@ -368,33 +364,34 @@ Directives
     	   Maximum number of connections to cache. If there isn't enough room
     	   to cache new connections - last recently used connections will be 
     	   kicked off the cache.
-    	- single
-    	   Treat everything as single host. With this flag connections to
-    	   different backends are treated as equal.
 
     The instruction is for keeping alive between nginx and resin.
-    It may not work when nginx has multiple processes,if not working,you should set accept_mutex off;
+    It may not work when nginx has multiple processes,if not working,you should
+    set accept_mutex off;
 
 Installation
     Download the latest version of the release tarball of this module from
-    googlecode (<http://code.google.com/p/nginx-hmux_module/downloads/list>)
+    github (git clone http://github.com/wangbin579/nginx-hmux-module)
 
     Grab the nginx source code from nginx.org (<http://nginx.org/>).Please get
-    the version 0.7.* or later, for example, the version 0.8.53 (see nginx compatibility), 
-    and then build the source with this module:
+    the version 0.7.* or later.
 
-         $wget 'http://nginx.org/download/nginx-0.8.53.tar.gz'
-         $tar -xzvf nginx-0.8.53.tar.gz
-         $cd nginx-0.8.53/
+    For example, the version 1.2.3, and then build the source with this module:
+
+         $wget 'http://nginx.org/download/nginx-1.2.3.tar.gz'
+         $tar -xzvf nginx-1.2.3.tar.gz
+         $cd nginx-1.2.3/
          $patch -p1 < /path/to/hmux/directory/hmux.patch
 
-         $./configure --add-module=/path/to/hmux/directory --add-module=/path/to/keepalive/directory
+         $./configure --add-module=/path/to/hmux/directory 
 
          $make
          $make install
 
     Note:
-		it's for nginx 0.7.* or above  and won't work with nginx 0.6.*.
+		It's for nginx 0.7.* or above  and won't work with nginx 0.6.*.
+        Nginx 1.1.4 or above is strongly recommended.
+        
 
 TODO
     SSL
@@ -405,6 +402,8 @@ Known Issues
 Changelogs
   v0.1
     first release
+  v0.5
+    fix keepalive problems for nginx 1.1.14 or above
 
 Authors
     Bin Wang  *163.beijing AT gmail DOT com*
