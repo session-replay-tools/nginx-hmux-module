@@ -2007,6 +2007,8 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 #if (NGX_HTTP_CACHE)
         if (pos ==  buf->last) {
             if (r->cache) {
+                ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                        "header from cache is over");
                 return NGX_OK;
             }
         }
