@@ -2004,6 +2004,13 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
 
     do{
         pos = buf->pos;
+#if (NGX_HTTP_CACHE)
+        if (pos ==  buf->last) {
+            if (r->cache) {
+                return NGX_OK;
+            }
+        }
+#endif
         rc  = hmux_read_byte(msg, &code);
         if (rc != NGX_OK) {
             buf->pos = pos;
@@ -2231,6 +2238,11 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
                             "overflow when receiving send header command");
                     return NGX_AGAIN;
                 }
+#if (NGX_HTTP_CACHE)
+                if (r->cache) {
+                    return NGX_OK;
+                }
+#endif
                 ctx->state = ngx_hmux_st_response_parse_headers_done;
                 break;
 
