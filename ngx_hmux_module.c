@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  *  Description:  implements resin's mod_caucho function for nginx
- *      Version:  0.5
+ *      Version:  0.6
  *       Author:  bin wang
  *      Company:  netease
  *         Mail:  163.beijing@gmail.com
@@ -151,13 +151,12 @@ struct hmux_msg_s
 
 
 typedef struct {
-
+    ngx_http_upstream_conf_t       upstream;
     size_t                         hmux_header_packet_buffer_size_conf;
     size_t                         max_hmux_data_packet_size_conf;
     ngx_flag_t                     hmux_set_header_x_forwarded_for;
     ngx_array_t                   *hmux_lengths;
     ngx_array_t                   *hmux_values;
-    ngx_http_upstream_conf_t       upstream;
 #if (NGX_HTTP_CACHE)
     ngx_http_complex_value_t       cache_key;
 #endif
