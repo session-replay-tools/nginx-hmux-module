@@ -1994,7 +1994,7 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
     u    = r->upstream;
 
 
-    if (NULL== ctx || NULL== conf||NULL== umcf) {
+    if (NULL == ctx || NULL == conf || NULL == umcf) {
         return NGX_ERROR;
     }
     ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0,
@@ -2299,6 +2299,7 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
         r->header_only = 1;
         /* for sending to client quickly */
         r->headers_out.content_length_n = 0;
+        u->headers_in.content_length_n  = 0;
     }
 
     if (code != HMUX_DATA && code != HMUX_QUIT && code != HMUX_EXIT) {
