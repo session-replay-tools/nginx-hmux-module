@@ -2871,6 +2871,53 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
+#if defined(nginx_version) && nginx_version >= 1001004
+static ngx_int_t
+ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
+        ngx_str_t *v, uintptr_t data)
+{
+    size_t             len;
+    u_char            *p;
+    ngx_uint_t         i, n;
+    ngx_table_elt_t  **h;
+
+    n = r->headers_in.x_forwarded_for.nelts;
+    h = r->headers_in.x_forwarded_for.elts;
+
+    len = 0;
+
+    for (i = 0; i < n; i++) {
+        len += h[i]->value.len + sizeof(", ") - 1;
+    }
+
+    if (len == 0) {
+        v->len = r->connection->addr_text.len;
+        v->data = r->connection->addr_text.data;
+        return NGX_OK;
+    }
+
+    len += r->connection->addr_text.len;
+
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    v->len = len;
+    v->data = p;
+
+    for (i = 0; i < n; i++) {
+        p = ngx_copy(p, h[i]->value.data, h[i]->value.len);
+        *p++ = ','; *p++ = ' ';
+    }
+
+    ngx_memcpy(p, r->connection->addr_text.data, r->connection->addr_text.len);
+
+    return NGX_OK;
+
+}
+
+#else
 static ngx_int_t
 ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
         ngx_str_t *v, uintptr_t data)
@@ -2902,6 +2949,7 @@ ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
 
     return NGX_OK;
 }
+#endif
 
 static int
 hmux_log_overflow(ngx_uint_t level, hmux_msg_t *msg, const char *context)
