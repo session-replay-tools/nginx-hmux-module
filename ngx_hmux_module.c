@@ -2871,7 +2871,7 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
-#if defined(nginx_version) && nginx_version >= 1001004
+#if defined(nginx_version) && nginx_version >= 1004000
 static ngx_int_t
 ngx_hmux_get_x_forwarded_for_value(ngx_http_request_t *r,
         ngx_str_t *v, uintptr_t data)
