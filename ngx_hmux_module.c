@@ -1892,7 +1892,7 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
         ngx_hmux_loc_conf_t *hlcf)
 {
     ngx_int_t                 rc;
-    ngx_str_t                 key, value;
+    ngx_str_t                 ctl, key, value;
 
     if ( (NGX_CONF_UNSET != hlcf->hmux_set_header_x_forwarded_for )
             && (hlcf->hmux_set_header_x_forwarded_for))
@@ -1916,6 +1916,12 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
     if ( (NGX_CONF_UNSET != hlcf->hmux_proxy_https)
             && (hlcf->hmux_proxy_https))
     {
+        ctl.len  = sizeof("") - 1;
+        ctl.data = (u_char *)"";
+        rc = hmux_write_string(msg, CSE_IS_SECURE, &ctl);
+        if (rc != NGX_OK) {
+            return rc;
+        }
         key.len  = sizeof("HTTPS") - 1;
         key.data = (u_char *)"HTTPS";
         rc = hmux_write_string(msg, HMUX_HEADER, &key);
