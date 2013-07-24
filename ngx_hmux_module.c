@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  *  Description:  implements resin's mod_caucho function for nginx
- *      Version:  0.6
+ *      Version:  0.7
  *       Author:  bin wang
  *      Company:  netease
  *         Mail:  163.beijing@gmail.com
@@ -155,7 +155,6 @@ typedef struct {
     size_t                         hmux_header_packet_buffer_size_conf;
     size_t                         max_hmux_data_packet_size_conf;
     ngx_flag_t                     hmux_set_header_x_forwarded_for;
-    ngx_flag_t                     hmux_proxy_https;
     ngx_array_t                   *hmux_lengths;
     ngx_array_t                   *hmux_values;
 #if (NGX_HTTP_CACHE)
@@ -560,13 +559,6 @@ static ngx_command_t  ngx_hmux_commands[] = {
         ngx_conf_set_flag_slot,
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_hmux_loc_conf_t, hmux_set_header_x_forwarded_for),
-        NULL },
-
-    { ngx_string("hmux_proxy_https"),
-        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-        ngx_conf_set_flag_slot,
-        NGX_HTTP_LOC_CONF_OFFSET,
-        offsetof(ngx_hmux_loc_conf_t, hmux_proxy_https),
         NULL },
 
 
@@ -1892,7 +1884,10 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
         ngx_hmux_loc_conf_t *hlcf)
 {
     ngx_int_t                 rc;
-    ngx_str_t                 ctl, key, value;
+#if (NGX_HTTP_SSL)
+    ngx_str_t                 ctl;
+#endif
+    ngx_str_t                 key, value;
 
     if ( (NGX_CONF_UNSET != hlcf->hmux_set_header_x_forwarded_for )
             && (hlcf->hmux_set_header_x_forwarded_for))
@@ -1902,7 +1897,7 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
             return rc;
         }
         key.len  = sizeof("X-Forwarded-For") - 1;
-        key.data = (u_char *)"X-Forwarded-For";
+        key.data = (u_char *) "X-Forwarded-For";
         rc = hmux_write_string(msg, HMUX_HEADER, &key);
         if (rc != NGX_OK) {
             return rc;
@@ -1913,17 +1908,16 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
         }
     }
 
-    if ( (NGX_CONF_UNSET != hlcf->hmux_proxy_https)
-            && (hlcf->hmux_proxy_https))
-    {
+#if (NGX_HTTP_SSL)
+    if (r->connection->ssl) {   
         ctl.len  = sizeof("") - 1;
-        ctl.data = (u_char *)"";
+        ctl.data = (u_char *) "";
         rc = hmux_write_string(msg, CSE_IS_SECURE, &ctl);
         if (rc != NGX_OK) {
             return rc;
         }
         key.len  = sizeof("HTTPS") - 1;
-        key.data = (u_char *)"HTTPS";
+        key.data = (u_char *) "HTTPS";
         rc = hmux_write_string(msg, HMUX_HEADER, &key);
         if (rc != NGX_OK) {
             return rc;
@@ -1935,6 +1929,7 @@ write_added_headers(hmux_msg_t *msg, ngx_http_request_t *r,
             return rc;
         }
     }
+#endif
 
     return NGX_OK;
 }
@@ -2606,7 +2601,6 @@ ngx_hmux_create_loc_conf(ngx_conf_t *cf)
     conf->hmux_header_packet_buffer_size_conf = NGX_CONF_UNSET_SIZE;
     conf->max_hmux_data_packet_size_conf = NGX_CONF_UNSET_SIZE;
     conf->hmux_set_header_x_forwarded_for= NGX_CONF_UNSET;
-    conf->hmux_proxy_https = NGX_CONF_UNSET;
 
     conf->upstream.store = NGX_CONF_UNSET;
     conf->upstream.store_access = NGX_CONF_UNSET_UINT;
@@ -2676,9 +2670,6 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->hmux_set_header_x_forwarded_for,
             prev->hmux_set_header_x_forwarded_for, 0);
-
-    ngx_conf_merge_value(conf->hmux_proxy_https,
-            prev->hmux_proxy_https, 0);
 
     ngx_conf_merge_uint_value(conf->upstream.store_access,
             prev->upstream.store_access, 0600);
