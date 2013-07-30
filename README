@@ -41,7 +41,8 @@ Directives
 
     This directive sets the number and the size of the buffers into which the reply from 
     the hmux process in the backend is read. By default, the size of each buffer is equal
-    to the OS page size. Depending on the platform and architecture this value is one of 4k, 8k or 16k. 
+    to the OS page size. Depending on the platform and architecture this value is one of 
+    4k, 8k or 16k. 
 
   hmux_buffer_size
     syntax: *hmux_buffer_size the_size;*
