@@ -51,9 +51,9 @@ Directives
 
     context: *http, server, location*
 
-    This directive sets the buffer size for reading the header of the backend hmux process. 
-    By default, the buffer size is equal to the size of one buffer in hmux_buffers. 
-    This directive allows you to set it to an arbitrary value. 
+    This directive sets the buffer size for reading the header of the backend hmux 
+    process. By default, the buffer size is equal to the size of one buffer in 
+    hmux_buffers. This directive allows you to set it to an arbitrary value. 
 
   hmux_cache
     The usage is the same as fastcgi_cache.
