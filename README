@@ -40,8 +40,8 @@ Directives
     context: *http, server, location*
 
     This directive sets the number and the size of the buffers into which the reply from 
-    the hmux process in the backend is read. By default, the size of each buffer is equal to 
-    the OS page size. Depending on the platform and architecture this value is one of 4k, 8k or 16k. 
+    the hmux process in the backend is read. By default, the size of each buffer is equal
+    to the OS page size. Depending on the platform and architecture this value is one of 4k, 8k or 16k. 
 
   hmux_buffer_size
     syntax: *hmux_buffer_size the_size;*
@@ -152,15 +152,15 @@ Directives
 
     This directive defines in which cases request will be passed to the next server: 
 
-    error ¡ª an error occurred during connection to the server, passing 
+    error ï¿½ï¿½ an error occurred during connection to the server, passing 
     request to it or reading server respond header; 
-    timeout ¡ª a timeout occurred during connection to the server, 
+    timeout ï¿½ï¿½ a timeout occurred during connection to the server, 
     passing request to it or reading server respond header; 
-    invalid_header ¡ª server returned empty or invalid answer; 
-    http_500 ¡ª server returned 500 respond; 
-    http_503 ¡ª server returned 503 respond; 
-    http_404 ¡ª server returned 404 respond; 
-    off ¡ª explicitly forbids passing request to the next server; 
+    invalid_header ï¿½ï¿½ server returned empty or invalid answer; 
+    http_500 ï¿½ï¿½ server returned 500 respond; 
+    http_503 ï¿½ï¿½ server returned 503 respond; 
+    http_404 ï¿½ï¿½ server returned 404 respond; 
+    off ï¿½ï¿½ explicitly forbids passing request to the next server; 
     It should be clear that passing request to the next server is possible 
     only if no data have been yet returned to the client. So, if the error 
     or timeout occurred during the data transmission to the client it's 
