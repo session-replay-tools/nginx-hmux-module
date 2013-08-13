@@ -699,12 +699,6 @@ ngx_hmux_eval(ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
         return NGX_ERROR;
     }
 
-    if (u.no_port) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "no port in upstream \"%V\"", &u.url);
-        return NGX_ERROR;
-    }
-
     r->upstream->resolved = ngx_pcalloc(r->pool,
             sizeof(ngx_http_upstream_resolved_t));
     if (NULL == r->upstream->resolved ) {
@@ -720,6 +714,7 @@ ngx_hmux_eval(ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
     } else {
         r->upstream->resolved->host = u.host;
         r->upstream->resolved->port = u.port;
+        r->upstream->resolved->no_port = u.no_port;
     }
 
     return NGX_OK;
