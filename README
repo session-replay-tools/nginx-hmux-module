@@ -153,15 +153,15 @@ Directives
 
     This directive defines in which cases request will be passed to the next server: 
 
-    error �� an error occurred during connection to the server, passing 
+    error - an error occurred during connection to the server, passing 
     request to it or reading server respond header; 
-    timeout �� a timeout occurred during connection to the server, 
+    timeout - a timeout occurred during connection to the server, 
     passing request to it or reading server respond header; 
     invalid_header �� server returned empty or invalid answer; 
-    http_500 �� server returned 500 respond; 
-    http_503 �� server returned 503 respond; 
-    http_404 �� server returned 404 respond; 
-    off �� explicitly forbids passing request to the next server; 
+    http_500 - server returned 500 respond; 
+    http_503 - server returned 503 respond; 
+    http_404 - server returned 404 respond; 
+    off - explicitly forbids passing request to the next server; 
     It should be clear that passing request to the next server is possible 
     only if no data have been yet returned to the client. So, if the error 
     or timeout occurred during the data transmission to the client it's 
