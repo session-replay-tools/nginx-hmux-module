@@ -3,7 +3,7 @@
  *      Version:  0.8
  *       Author:  bin wang
  *      Company:  netease
- *         Mail:  163.beijing@gmail.com
+ *         Mail:  wangbin579@gmail.com
  *    Attension:  
  *                  1) it is tested in linux only 
  *                  2) we have already tested eight projects for this module:
