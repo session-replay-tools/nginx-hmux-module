@@ -769,7 +769,7 @@ ngx_hmux_create_request(ngx_http_request_t *r)
     rc = hmux_marshal_into_msg(msg, r, hlcf);
     if (NGX_OK != rc) {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                "hmux_header_packet_buffer_size is too small:%u", 
+                "hmux_header_packet_buffer_size may be too small:%u", 
                 hlcf->hmux_header_packet_buffer_size_conf);
 
         return rc;
@@ -1649,10 +1649,14 @@ hmux_msg_create_buffer(ngx_pool_t *pool, size_t size,
 
 /* this method is only valid when through hmux module */
 static ngx_int_t 
-check_url_valid(char*url, size_t len)
+check_url_valid(char *url, size_t len)
 {
     size_t i;
-    char buf[4096];
+    char buf[65536];
+
+    if (len >= sizeof(buf)) {
+       return NGX_HTTP_FORBIDDEN;
+    }
 
     memset(buf, '\0', sizeof(buf));
 
@@ -1679,7 +1683,7 @@ check_url_valid(char*url, size_t len)
 static ngx_int_t
 write_env(hmux_msg_t *msg, ngx_http_request_t *r)
 {
-    char                     buf[4096];
+    char                     buf[65536];
     u_char                   ch;
     ngx_int_t                rc;
     ngx_str_t               *uri, *host, *remote_host, *remote_addr,
@@ -1710,11 +1714,13 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
     buf[j] = 0; 
 
     transfer_url.len  = strlen(buf);
-    transfer_url.data = (u_char*)buf;
+    transfer_url.data = (u_char *) buf;
 
     /* check url validation */
     rc = check_url_valid(buf, transfer_url.len);
     if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                "url is not valid");
         return rc;
     }
 
@@ -1756,7 +1762,7 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
     port = ntohs(addr->sin_port);
     sprintf(buf, "%u", port);
     port_str.len  = strlen(buf);
-    port_str.data = (u_char*)buf;
+    port_str.data = (u_char *) buf;
     rc = hmux_write_string(msg, CSE_SERVER_PORT, &port_str);
     if (rc != NGX_OK) {
         return rc;
@@ -1780,7 +1786,7 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
     port = ntohs(addr->sin_port);
     sprintf(buf, "%u", port);
     port_str.len  = strlen(buf);
-    port_str.data = (u_char*)buf;
+    port_str.data = (u_char *) buf;
 
     /* write remote port */
     rc = hmux_write_string(msg, CSE_REMOTE_PORT, &port_str);
