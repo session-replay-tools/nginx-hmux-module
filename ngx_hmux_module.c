@@ -194,7 +194,7 @@ typedef struct {
     void                       *undisposed;
     size_t                      undisposed_size;
     /* the response body chunk packet's length */
-    size_t                      resp_chunk_len;
+    int                         resp_chunk_len;
     unsigned int                req_body_sent_over:1;
     unsigned int                head_send_flag:1;
     unsigned int                long_post_flag:1;
@@ -262,7 +262,7 @@ static ngx_int_t hmux_start_channel(hmux_msg_t *msg,
 static ngx_int_t hmux_write_string(hmux_msg_t *msg,
         char code, ngx_str_t *value);
 
-static ngx_int_t hmux_read_len(hmux_msg_t *msg, uint16_t *rlen);
+static ngx_int_t hmux_read_len(hmux_msg_t *msg, int *rlen);
 static ngx_int_t hmux_read_byte(hmux_msg_t *s, u_char *rvalue);
 static ngx_int_t hmux_read_string(hmux_msg_t *msg, ngx_str_t *rvalue);
 
@@ -1184,9 +1184,8 @@ ngx_hmux_restore_request_body(ngx_http_request_t *r)
 static ngx_int_t
 ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 {
-    int                  need_read_resp_data, omit_flag, need_more_data;
+    int                  len, need_read_resp_data, omit_flag, need_more_data;
     u_char              *pos, code;
-    uint16_t             len;
     ngx_int_t            rc;
     ngx_str_t            str;
     ngx_buf_t           *b, **prev, *flush_buf, *mended_buf, *work_buf;
@@ -1316,7 +1315,7 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
             }
 
             if (need_read_resp_data) {
-                rc = hmux_read_len(msg, (uint16_t *)&ctx->resp_chunk_len);
+                rc = hmux_read_len(msg, &ctx->resp_chunk_len);
                 if (NGX_OK != rc) {
                     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                             "overflow when receiving data length in filter");
@@ -1522,7 +1521,7 @@ hmux_read_byte(hmux_msg_t *msg, u_char *rvalue)
 }
 
 static ngx_int_t
-hmux_read_len(hmux_msg_t *msg, uint16_t *rlen)
+hmux_read_len(hmux_msg_t *msg, int *rlen)
 {
     int       l1, l2;
     u_char    tmp;
@@ -1549,8 +1548,8 @@ hmux_read_len(hmux_msg_t *msg, uint16_t *rlen)
 static ngx_int_t
 hmux_read_string(hmux_msg_t *msg, ngx_str_t *rvalue)
 {
+    int        size;
     u_char    *start;
-    uint16_t   size;
     ngx_int_t  rc;
     ngx_buf_t *buf;
 
@@ -2000,9 +1999,8 @@ ngx_atoi2(u_char *line, size_t n)
 static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg, 
         ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 {
-    int                             over; 
+    int                             over, len, data_len;
     u_char                          code, *pos;
-    uint16_t                        len, data_len;
     ngx_buf_t                      *buf,*b;
     ngx_int_t                       rc;
     ngx_str_t                       str, str2; 
