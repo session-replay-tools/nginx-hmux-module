@@ -1013,7 +1013,7 @@ hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size,
 
     ctx = ngx_http_get_module_ctx(r, ngx_hmux_module);
 
-    if (body == NULL || *body ==NULL || ctx == NULL) {
+    if (body == NULL || *body == NULL || ctx == NULL) {
         return NULL;
     }
 
