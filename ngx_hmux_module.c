@@ -778,7 +778,7 @@ ngx_hmux_create_request(ngx_http_request_t *r)
     rc = hmux_marshal_into_msg(msg, r, hlcf);
     if (rc != NGX_OK) {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                "hmux_header_packet_buffer_size may be too small:%u", 
+                "hmux_header_packet_buffer_size may be too small:%uz", 
                 hlcf->hmux_header_packet_buffer_size_conf);
 
         return rc;
@@ -810,6 +810,17 @@ ngx_hmux_create_request(ngx_http_request_t *r)
                 }
             }
         }
+        if (!need_send_body) {
+            if (ctx->req_body != NULL) {
+                if (ctx->req_body->buf != NULL) {
+                    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                            "It has body but need_send_body is false");
+                } else {
+                    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                            "strange here, ctx->req_body->buf is null");
+                }
+            }
+        }
     }
     
     r->upstream->request_bufs = cl;
@@ -832,12 +843,12 @@ ngx_hmux_create_request(ngx_http_request_t *r)
             last->next = hmux_cmd_msg(ctx, r, HMUX_QUIT);
             ctx->req_body_sent_over = 1;
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "req body sent done:%V", & r->uri);
+            "req body sent done:%V", &r->uri);
         }
 
     } else {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "no need to send req_body:%V", & r->uri);
+            "no need to send req_body:%V", &r->uri);
         ctx->req_body_sent_over = 1;
         ctx->state = ngx_hmux_st_request_send_all_done;
         cl->next = hmux_cmd_msg(ctx, r, HMUX_QUIT);
@@ -949,7 +960,7 @@ ngx_http_upstream_send_request_body(ngx_http_request_t *r,
         ctx->state = ngx_hmux_st_request_send_all_done;
         ctx->req_body_sent_over = 1;
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "req body sent over:%V", & r->uri);
+            "req body sent over:%V", &r->uri);
 
     }
 
@@ -1156,7 +1167,7 @@ hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size,
                         "not set req_body_sent_over before");
             }
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "hmux_data_msg_send_body over:%V", & r->uri);
+            "hmux_data_msg_send_body over:%V", &r->uri);
 
             ctx->req_body_sent_over = 1;
         }
@@ -1247,6 +1258,8 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     }
 
     if (buf->pos == buf->last) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                "zero buffer");
         return NGX_OK;
     }
 
@@ -1761,7 +1774,7 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
 
     j = 0; 
     for (i = 0; (ch = uri->data[i]) && ch != '?' && (j + 3) < sizeof(buf)
-            &&i < uri->len; i++) 
+            && i < uri->len; i++) 
     {
         if ('%' == ch ) {
             buf[j++] = '%'; 
