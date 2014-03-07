@@ -195,6 +195,7 @@ typedef struct {
     size_t                   undisposed_size;
     /* the response body chunk packet's length */
     int                      resp_chunk_len;
+    int                      buf_next_read_offset;
     unsigned int             req_body_sent_over:1;
     unsigned int             head_send_flag:1;
     unsigned int             long_post_flag:1;
@@ -1014,8 +1015,10 @@ ngx_chain_t *
 hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size, 
         ngx_chain_t **body)
 {
+    off_t                     act_f_pos;
     size_t                    size, actual_size, base_size, 
                               added_size, redundant_size;
+    u_char                   *act_pos;
     ngx_int_t                 rc;
     ngx_buf_t                *b_in, *b_out;
     ngx_chain_t              *out, *cl, *in;
@@ -1065,41 +1068,47 @@ hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size,
         base_size = size;
         if (b_in->in_file) {
 
-            if ((size_t) (b_in->file_last - b_in->file_pos) <=
+            act_f_pos = b_in->file_pos;
+
+            if (ctx->buf_next_read_offset) {
+                act_f_pos += ctx->buf_next_read_offset;
+            }
+
+            if ((size_t) (b_in->file_last - act_f_pos) <=
                     (max_size - size))
             {
-                b_out->file_pos  = b_in->file_pos;
-                b_out->file_last = b_in->file_pos = b_in->file_last;
+                b_out->file_pos  = act_f_pos; 
+                b_out->file_last = b_in->file_last;
+                size += (b_out->file_last - b_out->file_pos);
 
-                size += b_out->file_last - b_out->file_pos;
-
-            } else if ((size_t) (b_in->file_last - b_in->file_pos) >
+            } else if ((size_t) (b_in->file_last - act_f_pos) >
                     (max_size-size))
             {
-
-                b_out->file_pos  = b_in->file_pos;
-                b_in->file_pos  += max_size - size;
-                b_out->file_last = b_in->file_pos;
-
-                size += b_out->file_last - b_out->file_pos;
+                b_out->file_pos  = act_f_pos;
+                ctx->buf_next_read_offset += (max_size - size);
+                b_out->file_last = b_out->file_pos + (max_size - size);
+                size += (b_out->file_last - b_out->file_pos);
 
             }
         } else {
-            if ((size_t) (b_in->last - b_in->pos) <= (max_size - size)) {
+            act_pos = b_in->pos;
 
-                b_out->pos  = b_in->pos;
-                b_out->last = b_in->pos = b_in->last;
+            if (ctx->buf_next_read_offset) {
+                act_pos += ctx->buf_next_read_offset;
+            }
 
+            if ((size_t) (b_in->last - act_pos) <= (max_size - size)) {
+
+                b_out->pos  = act_pos;
+                b_out->last = b_in->last;
                 size += b_out->last - b_out->pos;
 
-            } else if ((size_t) (b_in->last - b_in->pos) > (max_size - size)) {
+            } else if ((size_t) (b_in->last - act_pos) > (max_size - size)) {
 
-                b_out->pos = b_in->pos;
-                b_in->pos += max_size - size;
-                b_out->last = b_in->pos;
-
-                size += b_out->last - b_out->pos;
-
+                b_out->pos = act_pos;
+                b_out->last = b_out->pos + (max_size - size);
+                ctx->buf_next_read_offset += (max_size - size);
+                size += (b_out->last - b_out->pos);
             }
         }
 
@@ -1151,6 +1160,7 @@ hmux_data_msg_send_body(ngx_http_request_t *r, size_t max_size,
             break;
         } else {
             in = in->next;
+            ctx->buf_next_read_offset = 0;
         }
     }
 
