@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  *  Description:  implements resin's mod_caucho function for nginx
- *      Version:  1.0
+ *      Version:  1.2
  *       Author:  bin wang
  *      Company:  NetEase
  *         Mail:  wangbin579@gmail.com
@@ -140,6 +140,8 @@
 #define HMUX_QUERY 0x102
 #define HMUX_EOVERFLOW  1001
 
+#define NGX_HMUX_END 1
+
 ngx_module_t               ngx_hmux_module;
 typedef struct hmux_msg_s  hmux_msg_t;
 
@@ -215,6 +217,7 @@ static ngx_int_t ngx_hmux_eval(ngx_http_request_t *r,
 static ngx_int_t ngx_hmux_create_request(ngx_http_request_t *r);
 static ngx_int_t ngx_hmux_reinit_request(ngx_http_request_t *r);
 static ngx_int_t ngx_hmux_process_header(ngx_http_request_t *r);
+static ngx_int_t ngx_hmux_input_filter_init(void *data);
 static ngx_int_t ngx_hmux_input_filter(ngx_event_pipe_t *p, 
         ngx_buf_t *buf);
 static void ngx_hmux_abort_request(ngx_http_request_t *r);
@@ -671,6 +674,7 @@ ngx_hmux_handler(ngx_http_request_t *r)
 
     u->pipe->input_filter = ngx_hmux_input_filter;
     u->pipe->input_ctx    = r;
+    u->input_filter_init = ngx_hmux_input_filter_init;
 
     rc = ngx_http_read_client_request_body(r, ngx_http_upstream_init);
 
@@ -1242,6 +1246,15 @@ ngx_hmux_restore_request_body(ngx_http_request_t *r)
         next = cl->next->buf;
         next->pos = next->start;
     }
+    return NGX_OK;
+}
+
+static ngx_int_t
+ngx_hmux_input_filter_init(void *data)
+{
+    ngx_http_request_t  *r = data;
+    r->upstream->pipe->length = (off_t) NGX_HMUX_END;
+
     return NGX_OK;
 }
 

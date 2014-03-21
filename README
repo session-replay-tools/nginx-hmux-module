@@ -384,23 +384,20 @@ Installation
     github (git clone http://github.com/wangbin579/nginx-hmux-module)
 
     Grab the nginx source code from nginx.org (<http://nginx.org/>).Please get
-    the version 0.8.44 or later.
+    the version 1.1.4 or later.
 
     For example, the version 1.2.3, and then build the source with this module:
 
          $wget 'http://nginx.org/download/nginx-1.2.3.tar.gz'
          $tar -xzvf nginx-1.2.3.tar.gz
          $cd nginx-1.2.3/
-         $patch -p1 < /path/to/hmux/directory/hmux.patch
-
          $./configure --add-module=/path/to/hmux/directory 
-
          $make
          $make install
 
     Note:
-        It's for nginx 0.8.44 or above 
-        Nginx 1.1.4 or above is strongly recommended.
+        It's for nginx 1.1.4 or above 
+        Nginx 1.2.0 or above is strongly recommended.
         
 
 
