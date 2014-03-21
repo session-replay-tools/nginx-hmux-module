@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  *  Description:  implements resin's mod_caucho function for nginx
- *      Version:  1.2
+ *      Version:  1.3
  *       Author:  bin wang
  *      Company:  NetEase
  *         Mail:  wangbin579@gmail.com
