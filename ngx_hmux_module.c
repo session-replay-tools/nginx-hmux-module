@@ -1271,7 +1271,6 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     ngx_chain_t         *cl,*tmp_cl;
     ngx_hmux_ctx_t      *ctx;
     ngx_http_request_t  *r;
-    ngx_http_upstream_t *u; 
 
     r = p->input_ctx;
     ctx = ngx_http_get_module_ctx(r, ngx_hmux_module);
@@ -1286,7 +1285,6 @@ ngx_hmux_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
         return NGX_OK;
     }
 
-    u                   = r->upstream;
     need_read_resp_data = 0;
     omit_flag           = 0;
     b                   = NULL;
@@ -2037,9 +2035,6 @@ static ngx_int_t hmux_marshal_into_msg(hmux_msg_t *msg,
         ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 {
     ngx_int_t            rc;
-    ngx_log_t           *log;
-
-    log = r->connection->log;
 
     rc = hmux_start_channel(msg, 1);
     if (rc != NGX_OK) {
