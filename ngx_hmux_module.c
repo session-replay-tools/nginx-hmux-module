@@ -1544,6 +1544,9 @@ ngx_hmux_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
             "finalize req,req_body_len:%d, uri:%V", ctx->req_body_len, &r->uri);
 
     if (u != NULL) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "keepalive:%d, uri:%V", ctx->req_body_len, &r->uri);
+
         if (HMUX_QUIT == ctx->code) {
             u->length = 0;
 #if defined(nginx_version) && nginx_version >= 1001004 
@@ -2535,8 +2538,12 @@ ngx_hmux_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 #if (NGX_HTTP_CACHE)
+#if (nginx_version >= 1007009)
+    if (hlcf->upstream.cache > 0)
+#else
     if (hlcf->upstream.cache != NGX_CONF_UNSET_PTR
             && hlcf->upstream.cache != NULL)
+#endif
     {
         return "is incompatible with \"hmux_cache\"";
     }
@@ -2590,17 +2597,29 @@ static char *
 ngx_hmux_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
 
-    ngx_str_t           *value;
-    ngx_hmux_loc_conf_t *hlcf = conf;
+    ngx_str_t                        *value;
+    ngx_hmux_loc_conf_t              *hlcf = conf;
+#if (nginx_version >= 1007009)
+    ngx_http_complex_value_t          cv;
+    ngx_http_compile_complex_value_t  ccv;
+#endif
 
     value = cf->args->elts;
-
-    if (hlcf->upstream.cache != NGX_CONF_UNSET_PTR) {
+#if (nginx_version >= 1007009)
+    if (hlcf->upstream.cache != NGX_CONF_UNSET)
+#else
+    if (hlcf->upstream.cache != NGX_CONF_UNSET_PTR) 
+#endif
+    {
         return "is duplicate";
     }
 
     if (ngx_strcmp(value[1].data, "off") == 0) {
+#if (nginx_version >= 1007009)
+        hlcf->upstream.cache = 0;
+#else
         hlcf->upstream.cache = NULL;
+#endif
         return NGX_CONF_OK;
     }
 
@@ -2608,12 +2627,41 @@ ngx_hmux_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is incompatible with \"hmux_store\"";
     }
 
+#if (nginx_version >= 1007009)
+    hlcf->upstream.cache = 1;
+    ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+    ccv.cf = cf;
+    ccv.value = &value[1];
+    ccv.complex_value = &cv;
+
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (cv.lengths != NULL) {
+        hlcf->upstream.cache_value = ngx_palloc(cf->pool,
+                sizeof(ngx_http_complex_value_t));
+        if (hlcf->upstream.cache_value == NULL) {
+            return NGX_CONF_ERROR;
+        }
+        *hlcf->upstream.cache_value = cv;
+        return NGX_CONF_OK;
+    }
+
+    hlcf->upstream.cache_zone = ngx_shared_memory_add(cf, &value[1], 0,
+            &ngx_hmux_module);
+
+    if (hlcf->upstream.cache_zone == NULL) {
+        return NGX_CONF_ERROR;
+    }
+#else
     hlcf->upstream.cache = ngx_shared_memory_add(cf, &value[1], 0,
             &ngx_hmux_module);
 
     if (hlcf->upstream.cache == NULL) {
         return NGX_CONF_ERROR;
     }
+#endif
     return NGX_CONF_OK;
 }
 
@@ -2723,7 +2771,11 @@ ngx_hmux_create_loc_conf(ngx_conf_t *cf)
     conf->upstream.pass_request_body = NGX_CONF_UNSET;
 
 #if (NGX_HTTP_CACHE)
+#if (nginx_version >= 1007009)
+    conf->upstream.cache = NGX_CONF_UNSET;
+#else
     conf->upstream.cache = NGX_CONF_UNSET_PTR;
+#endif
     conf->upstream.cache_min_uses = NGX_CONF_UNSET_UINT;
     conf->upstream.cache_valid = NGX_CONF_UNSET_PTR;
 #endif
@@ -2919,6 +2971,25 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 #if (NGX_HTTP_CACHE)
+#if (nginx_version >= 1007009)
+    if (conf->upstream.cache == NGX_CONF_UNSET) {
+        ngx_conf_merge_value(conf->upstream.cache,
+               prev->upstream.cache, 0);
+        conf->upstream.cache_zone = prev->upstream.cache_zone;
+        conf->upstream.cache_value = prev->upstream.cache_value;
+    }
+
+    if (conf->upstream.cache_zone && conf->upstream.cache_zone->data == NULL) {
+        ngx_shm_zone_t  *shm_zone;
+        shm_zone = conf->upstream.cache_zone;
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                "\"hmux_cache\" zone \"%V\" is unknown, "
+                "Maybe you haven't set the hmux_cache_path",
+                &shm_zone->shm.name);
+
+        return NGX_CONF_ERROR;
+    }
+#else
     ngx_conf_merge_ptr_value(conf->upstream.cache,
             prev->upstream.cache, NULL);
 
@@ -2934,6 +3005,7 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
         return NGX_CONF_ERROR;
     }
+#endif
 
     ngx_conf_merge_uint_value(conf->upstream.cache_min_uses,
             prev->upstream.cache_min_uses, 1);
