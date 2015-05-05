@@ -383,8 +383,7 @@ Installation
     Download the latest version of the release tarball of this module from
     github (git clone http://github.com/wangbin579/nginx-hmux-module)
 
-    Grab the nginx source code from nginx.org (<http://nginx.org/>).Please get
-    the version 1.1.4 or later.
+    Grab the nginx source code from nginx.org (<http://nginx.org/>).
 
     For example, the version 1.2.3, and then build the source with this module:
 
@@ -396,9 +395,7 @@ Installation
          $make install
 
     Note:
-        It's for nginx 1.1.4 or above 
-        Nginx 1.2.0 or above is strongly recommended.
-        
+        This module is for Nginx 1.1.4 ~ Nginx-1.6.3 
 
 
 Known Issues
