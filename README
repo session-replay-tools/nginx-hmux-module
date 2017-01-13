@@ -158,9 +158,11 @@ Directives
     timeout - a timeout occurred during connection to the server, 
             passing request to it or reading server respond header; 
     invalid_header - server returned empty or invalid answer; 
-    http_500 - server returned 500 respond; 
-    http_503 - server returned 503 respond; 
-    http_404 - server returned 404 respond; 
+    http_500 - a server returned a response with the code 500;
+    http_502 - a server returned a response with the code 502;
+    http_503 - a server returned a response with the code 503;
+    http_504 - a server returned a response with the code 504;
+    http_404 - a server returned a response with the code 404;
     non_idempotent - normally, requests with a non-idempotent method (POST, LOCK, PATCH) 
                      are not passed to the next server if a request has been sent to an 
                      upstream server (nginx 1.9.13); enabling this option explicitly 
