@@ -418,7 +418,7 @@ Installation
          $make install
 
     Note:
-        This module is for Nginx 1.1.4 ~ Nginx-1.6.3 
+        This module is for Nginx 1.1.4+
 
 
 Known Issues
