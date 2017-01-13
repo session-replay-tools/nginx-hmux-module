@@ -145,7 +145,7 @@ Directives
     This allows to intercept some errors, while passing others as are."
 
   hmux_next_upstream
-    syntax: *hmux_next_upstream [error|timeout|invalid_header|http_500|http_503|http_404|off];*
+    syntax: *hmux_next_upstream [error|timeout|invalid_header|http_500|http_503|http_404|non_idempotent|off];*
 
     default: *hmux_next_upstream error timeout;*
 
@@ -153,19 +153,42 @@ Directives
 
     This directive defines in which cases request will be passed to the next server: 
 
-    error - an error occurred during connection to the server, passing 
-    request to it or reading server respond header; 
+    error - an error occurred during connection to the server, 
+            passing request to it or reading server respond header; 
     timeout - a timeout occurred during connection to the server, 
-    passing request to it or reading server respond header; 
-    invalid_header �� server returned empty or invalid answer; 
+            passing request to it or reading server respond header; 
+    invalid_header - server returned empty or invalid answer; 
     http_500 - server returned 500 respond; 
     http_503 - server returned 503 respond; 
     http_404 - server returned 404 respond; 
+    non_idempotent - normally, requests with a non-idempotent method (POST, LOCK, PATCH) 
+                     are not passed to the next server if a request has been sent to an 
+                     upstream server (nginx 1.9.13); enabling this option explicitly 
+                     allows retrying such requests;
     off - explicitly forbids passing request to the next server; 
     It should be clear that passing request to the next server is possible 
     only if no data have been yet returned to the client. So, if the error 
     or timeout occurred during the data transmission to the client it's 
     too late to fix it. 
+
+  hmux_next_upstream_timeout
+    syntax: *hmux_next_upstream_timeout time;*
+
+    default: *hmux_next_upstream_timeout 0s;*
+
+    context: *http, server, location*
+   
+    This directive appeared in nginx version 1.7.5. 
+
+  hmux_next_upstream_tries
+    syntax: *hmux_next_upstream_tries number;*
+
+    default: *hmux_next_upstream_tries 0;*
+
+    context: *http, server, location*
+   
+    This directive appeared in nginx version 1.7.5. 
+
 
   hmux_max_data_packet_size
     syntax: *hmux_max_data_packet_size size;*

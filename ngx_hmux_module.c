@@ -290,6 +290,9 @@ static ngx_conf_bitmask_t  ngx_hmux_next_upstream_masks[] = {
     { ngx_string("error"), NGX_HTTP_UPSTREAM_FT_ERROR },
     { ngx_string("timeout"), NGX_HTTP_UPSTREAM_FT_TIMEOUT },
     { ngx_string("invalid_header"), NGX_HTTP_UPSTREAM_FT_INVALID_HEADER },
+#if defined(nginx_version) && nginx_version >= 1009013
+    { ngx_string("non_idempotent"), NGX_HTTP_UPSTREAM_FT_NON_IDEMPOTENT },
+#endif
     { ngx_string("http_500"), NGX_HTTP_UPSTREAM_FT_HTTP_500 },
     { ngx_string("http_502"), NGX_HTTP_UPSTREAM_FT_HTTP_502 },
     { ngx_string("http_503"), NGX_HTTP_UPSTREAM_FT_HTTP_503 },
@@ -429,6 +432,22 @@ static ngx_command_t  ngx_hmux_commands[] = {
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_hmux_loc_conf_t, upstream.read_timeout),
         NULL },
+
+#if defined(nginx_version) && nginx_version >= 1007005
+    { ngx_string("hmux_next_upstream_tries"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_num_slot,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        offsetof(ngx_hmux_loc_conf_t, upstream.next_upstream_tries),
+        NULL },
+
+    { ngx_string("hmux_next_upstream_timeout"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_msec_slot, 
+        NGX_HTTP_LOC_CONF_OFFSET,
+        offsetof(ngx_hmux_loc_conf_t, upstream.next_upstream_timeout),
+        NULL },
+#endif
 
     { ngx_string("hmux_buffers"),
         NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
@@ -2759,6 +2778,10 @@ ngx_hmux_create_loc_conf(ngx_conf_t *cf)
     conf->upstream.connect_timeout = NGX_CONF_UNSET_MSEC;
     conf->upstream.send_timeout = NGX_CONF_UNSET_MSEC;
     conf->upstream.read_timeout = NGX_CONF_UNSET_MSEC;
+#if defined(nginx_version) && nginx_version >= 1007005
+    conf->upstream.next_upstream_tries = NGX_CONF_UNSET_UINT;
+    conf->upstream.next_upstream_timeout = NGX_CONF_UNSET_MSEC;
+#endif
 
     conf->upstream.send_lowat = NGX_CONF_UNSET_SIZE;
     conf->upstream.buffer_size = NGX_CONF_UNSET_SIZE;
@@ -2841,6 +2864,13 @@ ngx_hmux_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_msec_value(conf->upstream.read_timeout,
             prev->upstream.read_timeout, 60000);
+
+#if defined(nginx_version) && nginx_version >= 1007005
+    ngx_conf_merge_uint_value(conf->upstream.next_upstream_tries,
+            prev->upstream.next_upstream_tries, 0);
+    ngx_conf_merge_msec_value(conf->upstream.next_upstream_timeout,
+            prev->upstream.next_upstream_timeout, 0);
+#endif
 
     ngx_conf_merge_size_value(conf->upstream.send_lowat,
             prev->upstream.send_lowat, 0);
