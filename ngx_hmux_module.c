@@ -1806,15 +1806,10 @@ write_env(hmux_msg_t *msg, ngx_http_request_t *r)
     ngx_str_t               *uri, *host, *remote_host, *remote_addr,
                              transfer_url, port_str;
     unsigned int             i, j;
-    int                      is_sub_request = 1, port; /* for rewrite */
+    int                      port;
     struct sockaddr_in      *addr;
 
-    if (is_sub_request) {
-        uri = &r->uri;
-    } else {
-        uri = &r->unparsed_uri;
-    }
-
+    uri = &r->uri;
     j = 0; 
     for (i = 0; (ch = uri->data[i]) && ch != '?' && (j + 3) < sizeof(buf)
             && i < uri->len; i++) 
@@ -2426,8 +2421,7 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
                 break;
         }
 
-
-    }while (!over);
+    } while (!over);
 
     if (HMUX_ACK == code) {
         if (ctx->req_body != NULL && !ctx->req_body_sent_over) {
@@ -2445,15 +2439,11 @@ static ngx_int_t hmux_unmarshal_response(hmux_msg_t *msg,
         return NGX_AGAIN;
     }
 
-    if (ctx->head_send_flag && HMUX_QUIT == code) {
+    if (ctx->head_send_flag && code == HMUX_QUIT) {
         r->header_only = 1;
         /* for sending to client quickly */
         r->headers_out.content_length_n = 0;
         u->headers_in.content_length_n  = 0;
-    }
-
-    if (code != HMUX_DATA && code != HMUX_QUIT && code != HMUX_EXIT) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     return NGX_OK;
