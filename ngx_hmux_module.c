@@ -735,6 +735,16 @@ ngx_hmux_eval(ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
         return NGX_ERROR;
     }
 
+#if defined(nginx_version) && nginx_version >= 1011006
+    if (u.addrs) {
+        r->upstream->resolved->sockaddr = u.addrs[0].sockaddr;
+        r->upstream->resolved->socklen  = u.addrs[0].socklen;
+        r->upstream->resolved->naddrs   = 1;
+        r->upstream->resolved->name = u.addrs[0].name;
+    }
+
+    r->upstream->resolved->host = u.host;
+#else
     if (u.addrs && u.addrs[0].sockaddr) {
         r->upstream->resolved->sockaddr = u.addrs[0].sockaddr;
         r->upstream->resolved->socklen  = u.addrs[0].socklen;
@@ -743,9 +753,11 @@ ngx_hmux_eval(ngx_http_request_t *r, ngx_hmux_loc_conf_t *hlcf)
 
     } else {
         r->upstream->resolved->host = u.host;
-        r->upstream->resolved->port = u.port;
-        r->upstream->resolved->no_port = u.no_port;
     }
+#endif
+
+    r->upstream->resolved->port = u.port;
+    r->upstream->resolved->no_port = u.no_port;
 
     return NGX_OK;
 }
