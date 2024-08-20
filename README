@@ -1,5 +1,5 @@
 Name
-    nginx_hmux_module - support hmux protocol proxy with Nginx
+    nginx_hmux_module - Support HMUX protocol proxy with NGINX.
 
 Synopsis
    
@@ -27,9 +27,7 @@ Synopsis
 	}
 
 Description
-    With this module, Nginx can connect to Resin through hmux protocol directly. The
-    backend connections are keepalive. The motivation of writing this module is 
-    Nginx's high performance and robustness.
+With this module, NGINX can directly connect to Resin using the HMUX protocol, with backend connections maintained as keepalive. The motivation for creating this module is to leverage NGINX's high performance and robustness.
 
 Directives
   hmux_buffers
@@ -435,7 +433,7 @@ Changelogs
     added "HTTPS ON" for https 
 
 Authors
-    Bin Wang  *163.beijing AT gmail DOT com*
+    Bin Wang 
 
 License
     This README template is from agentzh (<http://github.com/agentzh>).
