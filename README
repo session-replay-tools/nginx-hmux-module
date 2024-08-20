@@ -1,5 +1,5 @@
 Name
-    nginx_hmux_module - Support HMUX protocol proxy with NGINX.
+    nginx_hmux_module - Support HMUX protocol proxy with Nginx.
 
 Synopsis
    
@@ -27,7 +27,7 @@ Synopsis
 	}
 
 Description
-With this module, NGINX can directly connect to Resin using the HMUX protocol, with backend connections maintained as keepalive. The motivation for creating this module is to leverage NGINX's high performance and robustness.
+With this module, Nginx can directly connect to Resin using the HMUX protocol, with backend connections maintained as keepalive. The motivation for creating this module is to leverage Nginx's high performance and robustness.
 
 Directives
   hmux_buffers
@@ -138,7 +138,7 @@ Directives
     error_page.
 
     Note: You need to explicitly define the error_page handler for this for
-    it to be useful. As Igor says, "nginx does not intercept an error if
+    it to be useful. As Igor says, "Nginx does not intercept an error if
     there is no custom handler for it, it does not show its default pages.
     This allows to intercept some errors, while passing others as are."
 
@@ -163,7 +163,7 @@ Directives
     http_404 - a server returned a response with the code 404;
     non_idempotent - normally, requests with a non-idempotent method (POST, LOCK, PATCH) 
                      are not passed to the next server if a request has been sent to an 
-                     upstream server (nginx 1.9.13); enabling this option explicitly 
+                     upstream server (Nginx 1.9.13); enabling this option explicitly 
                      allows retrying such requests;
     off - explicitly forbids passing request to the next server; 
     It should be clear that passing request to the next server is possible 
@@ -178,7 +178,7 @@ Directives
 
     context: *http, server, location*
    
-    This directive appeared in nginx version 1.7.5. 
+    This directive appeared in Nginx version 1.7.5. 
 
   hmux_next_upstream_tries
     syntax: *hmux_next_upstream_tries number;*
@@ -187,7 +187,7 @@ Directives
 
     context: *http, server, location*
    
-    This directive appeared in nginx version 1.7.5. 
+    This directive appeared in Nginx version 1.7.5. 
 
 
   hmux_max_data_packet_size
@@ -398,15 +398,15 @@ Directives
     	   to cache new connections - last recently used connections will be 
     	   kicked off the cache.
 
-    The instruction is for keeping alive between nginx and resin.
-    It may not work when nginx has multiple processes,if not working,you should
+    The instruction is for keeping alive between Nginx and Resin.
+    It may not work when Nginx has multiple processes,if not working,you should
     set accept_mutex off;
 
 Installation
     Download the latest version of the release tarball of this module from
     github (git clone http://github.com/wangbin579/nginx-hmux-module)
 
-    Grab the nginx source code from nginx.org (<http://nginx.org/>).
+    Grab the Nginx source code from nginx.org (<http://nginx.org/>).
 
     For example, the version 1.2.3, and then build the source with this module:
 
@@ -428,7 +428,7 @@ Changelogs
   v0.1
     first release
   v0.5
-    fixed keepalive problems for nginx 1.1.14 or above
+    fixed keepalive problems for Nginx 1.1.14 or above
   v0.7
     added "HTTPS ON" for https 
 
@@ -439,7 +439,7 @@ License
     This README template is from agentzh (<http://github.com/agentzh>).
 
     I borrowed a lot of codes from fastcgi module of Nginx and 
-    the design of nginx's nginx_ajp_module
+    the design of Nginx's nginx_ajp_module
     (<https://github.com/yaoweibin/nginx_ajp_module>). Thanks
     for their hard work.
 
